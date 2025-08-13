@@ -1,3 +1,3 @@
-module github.com/nanatec/gopackages
+module github.com/nana-tec/gopackages
 
 go 1.21
