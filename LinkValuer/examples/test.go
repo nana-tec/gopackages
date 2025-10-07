@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	linkvaluer "Comprehensive/Libs/LinkValuer"
+	linkvaluer "github.com/nana-tec/gopackages/LinkValuer"
 )
 
 func main() {
