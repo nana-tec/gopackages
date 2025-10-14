@@ -17,6 +17,9 @@ type CreateRequest struct {
 	RegistrationNumber string `json:"registration_number"`
 	PolicyNumber       string `json:"policy_number"`
 	CustomerEmail      string `json:"customer_email,omitempty"`
+	InsuranceCompany   string `json:"insurance_company,omitempty"`
+	CallBackURL        string `json:"callback_url,omitempty"`
+	PartnerReference   string `json:"partner_reference,omitempty"`
 }
 
 // Generic API response wrappers (kept for internal use only)
