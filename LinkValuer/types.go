@@ -31,6 +31,41 @@ type APIResponse struct {
 	Raw     json.RawMessage `json:"-"`
 }
 
+// CallbackResponse is the payload for the callback
+//
+//	{
+//	 "booking_no": "LV_0277593",
+//	 "status": "completed",
+//	 "assessment_id": 267095,
+//	 "reg_no": "KDO 950L",
+//	 "completion_date": "2025-10-14T12:05:10.643616Z",
+//	 "pdf_url": "https://portal.linksvaluers.com/pdf-report/LV_027dhishih7593",
+//	 "partner_reference": "LIVE_TEST_1Q2W",
+//	 "customer_name": "test",
+//	 "insurance_company": "Ibime",
+//	 "policy_number": "9056QSQ22LR",
+//	 "market_value": "250000",
+//	 "duty_free_value": "150000",
+//	 "windscreen_value": "50000",
+//	 "radio_value": "25000"
+//	}
+type CallbackResponse struct {
+	BookingNo        string  `json:"booking_no"`
+	Status           string  `json:"status"`
+	AssessmentID     int     `json:"assessment_id"`
+	RegNo            string  `json:"reg_no"`
+	CompletionDate   string  `json:"completion_date"`
+	PdfUrl           string  `json:"pdf_url"`
+	PartnerReference string  `json:"partner_reference"`
+	CustomerName     string  `json:"customer_name"`
+	InsuranceCompany string  `json:"insurance_company"`
+	PolicyNumber     float64 `json:"policy_number"`
+	MarketValue      float64 `json:"market_value"`
+	DutyFreeValue    float64 `json:"duty_free_value"`
+	WindscreenValue  float64 `json:"windscreen_value"`
+	RadioValue       float64 `json:"radio_value"`
+}
+
 // CreateValuationPayload is a typed response for CreateValuation
 // Minimal shape based on observed patterns; extend as needed.
 
