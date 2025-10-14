@@ -42,6 +42,9 @@ func main() {
 		RegistrationNumber: "KAA000A",
 		PolicyNumber:       "POL123",
 		CustomerEmail:      "test@example.com",
+		InsuranceCompany:   "Ibima",
+		CallBackURL:        "https://example.com/callback",
+		PartnerReference:   "PARTNER123",
 	}
 	resp, err := c.CreateValuation(createReq)
 	if err != nil {
