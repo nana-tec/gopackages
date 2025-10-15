@@ -24,6 +24,7 @@ const (
 	ErrCreateValuation = 3000
 	ErrViewAssessments = 3100
 	ErrDownloadReport  = 3200
+	ErrViewAPIRequests = 3300
 )
 
 type ClientError struct {
