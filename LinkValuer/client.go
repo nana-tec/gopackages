@@ -22,6 +22,7 @@ type Client interface {
 	DownloadReport(bookingNo string) ([]byte, string, error)
 	GetToken() string
 	IsTokenValid() bool
+	ViewAPIRequests() (*ViewAPIRequestsResponse, error)
 }
 
 type client struct {
@@ -319,4 +320,26 @@ func (c *client) DownloadReport(bookingNo string) ([]byte, string, error) {
 		return nil, resp.Header.Get("Content-Type"), &ClientError{Type: ExternalError, Code: ErrDownloadReport, Message: fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body)), Operation: "DownloadReport", HTTPStatus: resp.StatusCode}
 	}
 	return body, resp.Header.Get("Content-Type"), nil
+}
+
+func (c *client) ViewAPIRequests() (*ViewAPIRequestsResponse, error) {
+	resp, body, err := c.authJSON(http.MethodGet, "/view-api-requests", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, &ClientError{Type: ExternalError, Code: ErrViewAPIRequests, Message: fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body)), Operation: "ViewAPIRequests", HTTPStatus: resp.StatusCode}
+	}
+
+	var out ViewAPIRequestsResponse
+	if err := json.Unmarshal(body, &out); err != nil {
+		return nil, newInternalError("ViewAPIRequests", ErrUnmarshalResponse, err)
+	}
+	return &out, nil
 }
