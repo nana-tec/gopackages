@@ -53,6 +53,14 @@ func main() {
 		fmt.Println("Create valuation response message:", resp.Message)
 	}
 
+	// View API requests
+	apiRequests, err := c.ViewAPIRequests()
+	if err != nil {
+		log.Printf("view api requests error: %v", err)
+	} else {
+		fmt.Println("API requests:", apiRequests.Data)
+	}
+
 	// View assessments
 	assessments, err := c.ViewAssessments()
 	if err != nil {
