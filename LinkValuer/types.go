@@ -79,6 +79,12 @@ type CreateValuationPayload struct {
 
 type CreateResponse = APIResponse
 
+type ViewAPIRequestsResponse struct {
+	Message string                   `json:"message,omitempty"`
+	Data    []map[string]interface{} `json:"data,omitempty"`
+	Client  string                   `json:"client,omitempty"`
+}
+
 type AssessmentsResponse = APIResponse
 
 // Assessments models
