@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -174,10 +175,6 @@ func (c *client) parseDMVICError(errorMsg string) string {
 //   - response: Response struct to unmarshal the result into
 //   - errorCode: Base error code for this operation
 func (c *client) makeAPICall(method, endpoint string, request interface{}, response interface{}, errorCode int) error {
-	/*if err := c.ensureValidToken(); err != nil {
-		return err
-	}
-	*/
 	var body []byte
 	var err error
 	if request != nil {
@@ -190,62 +187,102 @@ func (c *client) makeAPICall(method, endpoint string, request interface{}, respo
 	url := c.endpoint + endpoint
 	c.debugLog("Making %s request to: %s", method, url)
 
-	client, req, err := c.secureRequest(method, url, body)
-	//client, req, err := c.normalRequest(method, url, body)
-	if err != nil {
-		return newInternalError("makeAPICall", ErrCreateRequest, err)
+	attempts := 0
+	for attempts < 2 {
+		client, req, err := c.secureRequest(method, url, body)
+		if err != nil {
+			return newInternalError("makeAPICall", ErrCreateRequest, err)
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return newExternalError("makeAPICall", errorCode+3, err.Error())
+		}
+		respBody, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if readErr != nil {
+			return newInternalError("makeAPICall", ErrReadResponse, readErr)
+		}
+		c.debugLog("Response status: %d, body: %s", resp.StatusCode, string(respBody))
+
+		if resp.StatusCode != http.StatusOK {
+			clientErr := newExternalError("makeAPICall", errorCode+1, fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(respBody)))
+			clientErr.HTTPStatus = resp.StatusCode
+			return clientErr
+		}
+
+		if err := json.Unmarshal(respBody, response); err != nil {
+			return newInternalError("makeAPICall", ErrUnmarshalResponse, err)
+		}
+
+		// Detect DMVIC error from typed response (many response types implement GetError)
+		var dmvicErrCode, dmvicErrText string
+		if apiResp, ok := response.(interface{ GetError() string }); ok {
+			dmvicErrText = apiResp.GetError()
+			dmvicErrCode = c.parseDMVICError(dmvicErrText)
+			// If GetError returned an error code string (like "ER001"), parseDMVICError may return it or empty.
+			// If empty and the returned text looks like an ER code, use directly.
+			if dmvicErrCode == "" && len(dmvicErrText) >= 5 && strings.HasPrefix(dmvicErrText, "ER") {
+				dmvicErrCode = dmvicErrText[:5]
+			}
+		}
+
+		// Fallback: inspect raw response body for Error array/object
+		if dmvicErrCode == "" {
+			var respMap map[string]interface{}
+			if json.Unmarshal(respBody, &respMap) == nil {
+				if e, exists := respMap["Error"]; exists {
+					switch v := e.(type) {
+					case []interface{}:
+						if len(v) > 0 {
+							if emap, ok := v[0].(map[string]interface{}); ok {
+								if code, ok2 := emap["errorCode"].(string); ok2 {
+									dmvicErrCode = code
+								}
+								if text, ok2 := emap["errorText"].(string); ok2 && dmvicErrText == "" {
+									dmvicErrText = text
+								}
+							}
+						}
+					case map[string]interface{}:
+						if code, ok2 := v["errorCode"].(string); ok2 {
+							dmvicErrCode = code
+						}
+						if text, ok2 := v["errorText"].(string); ok2 && dmvicErrText == "" {
+							dmvicErrText = text
+						}
+					}
+				}
+			}
+		}
+
+		// If token expired/invalid detected, refresh and retry once
+		if dmvicErrCode == "ER001" || strings.Contains(strings.ToLower(dmvicErrText), "token is expired") || strings.Contains(strings.ToLower(dmvicErrText), "token is invalid") {
+			if attempts == 0 {
+				c.debugLog("DMVIC token error detected (%s / %s). Refreshing token and retrying...", dmvicErrCode, dmvicErrText)
+				if err := c.Login(); err != nil {
+					return err
+				}
+				attempts++
+				continue
+			}
+		}
+
+		// If there's a DMVIC error, return a DMVICError
+		// For now let's skip this
+		if (dmvicErrText != "" || dmvicErrCode != "") && false {
+			codeToReturn := dmvicErrCode
+			if codeToReturn == "" {
+				codeToReturn = c.parseDMVICError(dmvicErrText)
+			}
+			return newDMVICError("makeAPICall", errorCode+4, codeToReturn, dmvicErrText)
+		}
+
+		// success path
+		return nil
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return newExternalError("makeAPICall", errorCode+3, err.Error())
-	}
-	defer resp.Body.Close()
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return newInternalError("makeAPICall", ErrReadResponse, err)
-	}
-	c.debugLog("Response status: %d, body: %s", resp.StatusCode, string(respBody))
-	if resp.StatusCode != http.StatusOK {
-		clientErr := newExternalError("makeAPICall", errorCode+1, fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(respBody)))
-		clientErr.HTTPStatus = resp.StatusCode
-		return clientErr
-	}
-	if err := json.Unmarshal(respBody, response); err != nil {
-		return newInternalError("makeAPICall", ErrUnmarshalResponse, err)
-	}
-
-	//if respMap := make(map[string]interface{}); json.Unmarshal(respBody, &respMap) == nil {
-	//	// Check if "error" is string
-	//	if errorMsg, exists := respMap["error"].(string); exists && errorMsg != "" {
-	//		dmvicCode := c.parseDMVICError(errorMsg)
-	//		return newDMVICError("makeAPICall", errorCode+4, dmvicCode, errorMsg)
-	//	}
-	//	// Check if "Error" is string
-	//	if errorMsg, exists := respMap["Error"].(string); exists && errorMsg != "" {
-	//		dmvicCode := c.parseDMVICError(errorMsg)
-	//		return newDMVICError("makeAPICall", errorCode+4, dmvicCode, errorMsg)
-	//	}
-	//	// Check if "Error" is an array of errors
-	//	if errorArr, exists := respMap["Error"].([]interface{}); exists && len(errorArr) > 0 {
-	//		// Build combined error message string
-	//		for _, e := range errorArr {
-	//			if emap, ok := e.(map[string]interface{}); ok {
-	//				code, _ := emap["errorCode"].(string)
-	//				text, _ := emap["errorText"].(string)
-	//				return newDMVICError("makeAPICall", errorCode+4, code, text)
-	//			}
-	//		}
-	//	}
-	//}
-	//
-	//if apiResp, ok := response.(interface{ GetError() string }); ok {
-	//	if errorMsg := apiResp.GetError(); errorMsg != "" {
-	//		dmvicCode := c.parseDMVICError(errorMsg)
-	//		return newDMVICError("makeAPICall", errorCode+4, dmvicCode, errorMsg)
-	//	}
-	//}
-	return nil
+	return newExternalError("makeAPICall", errorCode+5, "max retry attempts reached")
 }
 
 // === API Methods Implementation ===
