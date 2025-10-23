@@ -33,6 +33,7 @@ type Config struct {
 	Debug              bool
 	Context            context.Context
 	TokenTTL           time.Duration // TTL for access token fallback if API doesn't provide expiry
+	Retries            int           // Number of retries on timeout (default 2)
 }
 
 // Validate verifies minimal config
@@ -52,6 +53,9 @@ func (c *Config) Validate() error {
 	}
 	if c.TokenTTL == 0 {
 		c.TokenTTL = 12 * time.Hour
+	}
+	if c.Retries == 0 {
+		c.Retries = 2
 	}
 	return nil
 }
