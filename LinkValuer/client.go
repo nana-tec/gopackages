@@ -2,10 +2,12 @@ package linkvaluer
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"path"
 	"strings"
@@ -32,13 +34,43 @@ type client struct {
 	tokens     *TTLCache[string, string]
 }
 
+const defaultRequestTimeout = 30 * time.Second
+
+func defaultTransport() *http.Transport {
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		ResponseHeaderTimeout: 15 * time.Second,
+	}
+}
+
 func NewClient(cfg *Config) (Client, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, &ClientError{Type: InternalError, Code: ErrInvalidConfig, Message: err.Error(), Operation: "NewClient"}
 	}
+
+	hc := cfg.NewHTTPClient()
+	if hc == nil {
+		hc = &http.Client{}
+	}
+	if hc.Transport == nil {
+		hc.Transport = defaultTransport()
+	}
+	if hc.Timeout == 0 {
+		hc.Timeout = defaultRequestTimeout
+	}
+
 	return &client{
 		config:     cfg,
-		httpClient: cfg.NewHTTPClient(),
+		httpClient: hc,
 		endpoint:   strings.TrimRight(cfg.GetEndpoint(), "/"),
 		tokens:     NewTTL[string, string](cfg.TokenTTL),
 	}, nil
@@ -125,13 +157,24 @@ func (c *client) ensureAccessToken() error {
 	return c.Login()
 }
 
+func (c *client) requestTimeout() time.Duration {
+	if c.httpClient != nil && c.httpClient.Timeout > 0 {
+		return c.httpClient.Timeout
+	}
+	return defaultRequestTimeout
+}
+
 func (c *client) Login() error {
 	payload, err := json.Marshal(c.config.Credentials)
 	if err != nil {
 		return newInternalError("Login", ErrMarshalRequest, err)
 	}
 	url := c.endpoint + "/get-token"
-	req, err := http.NewRequestWithContext(c.config.Context, http.MethodPost, url, bytes.NewReader(payload))
+
+	ctx, cancel := context.WithTimeout(c.config.Context, c.requestTimeout())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {
 		return newInternalError("Login", ErrCreateRequest, err)
 	}
@@ -157,7 +200,7 @@ func (c *client) Login() error {
 	c.setAccessToken(access, c.config.TokenTTL)
 	if refresh != "" {
 		c.setRefreshToken(refresh, 30*24*time.Hour)
-	} // assume long-lived
+	}
 	return nil
 }
 
@@ -167,7 +210,11 @@ func (c *client) Refresh() error {
 		return newExternalError("Refresh", ErrTokenRefresh, "no refresh token cached")
 	}
 	url := c.endpoint + "/refresh-token"
-	req, err := http.NewRequestWithContext(c.config.Context, http.MethodGet, url, nil)
+
+	ctx, cancel := context.WithTimeout(c.config.Context, c.requestTimeout())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return newInternalError("Refresh", ErrCreateRequest, err)
 	}
@@ -202,7 +249,11 @@ func (c *client) authJSON(method, endpoint string, payload []byte) (*http.Respon
 		return nil, nil, err
 	}
 	url := c.endpoint + ensureLeadingSlash(endpoint)
-	req, err := http.NewRequestWithContext(c.config.Context, method, url, bytes.NewReader(payload))
+
+	ctx, cancel := context.WithTimeout(c.config.Context, c.requestTimeout())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(payload))
 	if err != nil {
 		return nil, nil, newInternalError("authJSON:createRequest", ErrCreateRequest, err)
 	}
@@ -223,7 +274,7 @@ func (c *client) authJSON(method, endpoint string, payload []byte) (*http.Respon
 		if err := c.Refresh(); err != nil {
 			return nil, nil, err
 		}
-		// retry once
+		// retry once (use same ctx; it may still be valid)
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.GetToken()))
 		resp, err = c.httpClient.Do(req)
 		if err != nil {
@@ -236,6 +287,48 @@ func (c *client) authJSON(method, endpoint string, payload []byte) (*http.Respon
 		}
 	}
 	return resp, body, nil
+}
+
+func (c *client) DownloadReport(bookingNo string) ([]byte, string, error) {
+	if err := c.ensureAccessToken(); err != nil {
+		return nil, "", err
+	}
+	p := path.Join("/download-pdf", bookingNo)
+	url := c.endpoint + ensureLeadingSlash(p)
+
+	ctx, cancel := context.WithTimeout(c.config.Context, c.requestTimeout())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", newInternalError("DownloadReport", ErrCreateRequest, err)
+	}
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.GetToken()))
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, "", newExternalError("DownloadReport", ErrHTTPRequest, err.Error())
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusUnauthorized {
+		if err := c.Refresh(); err != nil {
+			return nil, "", err
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.GetToken()))
+		resp, err = c.httpClient.Do(req)
+		if err != nil {
+			return nil, "", newExternalError("DownloadReport", ErrHTTPRequest, err.Error())
+		}
+		defer resp.Body.Close()
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", newInternalError("DownloadReport", ErrReadResponse, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.Header.Get("Content-Type"), &ClientError{Type: ExternalError, Code: ErrDownloadReport, Message: fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body)), Operation: "DownloadReport", HTTPStatus: resp.StatusCode}
+	}
+	return body, resp.Header.Get("Content-Type"), nil
 }
 
 func ensureLeadingSlash(p string) string {
@@ -282,44 +375,6 @@ func (c *client) ViewAssessments() (*AssessmentsPayload, error) {
 		return nil, newInternalError("ViewAssessments", ErrUnmarshalResponse, err)
 	}
 	return &out, nil
-}
-
-func (c *client) DownloadReport(bookingNo string) ([]byte, string, error) {
-	if err := c.ensureAccessToken(); err != nil {
-		return nil, "", err
-	}
-	p := path.Join("/download-pdf", bookingNo)
-	url := c.endpoint + ensureLeadingSlash(p)
-	req, err := http.NewRequestWithContext(c.config.Context, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, "", newInternalError("DownloadReport", ErrCreateRequest, err)
-	}
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.GetToken()))
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, "", newExternalError("DownloadReport", ErrHTTPRequest, err.Error())
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusUnauthorized {
-		if err := c.Refresh(); err != nil {
-			return nil, "", err
-		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.GetToken()))
-		resp, err = c.httpClient.Do(req)
-		if err != nil {
-			return nil, "", newExternalError("DownloadReport", ErrHTTPRequest, err.Error())
-		}
-		defer resp.Body.Close()
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, "", newInternalError("DownloadReport", ErrReadResponse, err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.Header.Get("Content-Type"), &ClientError{Type: ExternalError, Code: ErrDownloadReport, Message: fmt.Sprintf("HTTP %d: %s", resp.StatusCode, string(body)), Operation: "DownloadReport", HTTPStatus: resp.StatusCode}
-	}
-	return body, resp.Header.Get("Content-Type"), nil
 }
 
 func (c *client) ViewAPIRequests() (*ViewAPIRequestsResponse, error) {
