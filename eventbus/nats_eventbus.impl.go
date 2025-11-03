@@ -34,7 +34,8 @@ func NewNatsEventBus[T any](url string, appname string) (*NatsEventBus[T], error
 
 	streamConf := jetstream.StreamConfig{
 		Name:        appName,
-		Description: fmt.Sprintf("Stores events for %s.%s", appname, "app_events"),
+		Description: fmt.Sprintf("Stores events for %s", appname),
+		Retention:   jetstream.WorkQueuePolicy,              //
 		Subjects:    []string{fmt.Sprintf("%s.>", appName)}, // Subject hierarchy
 	}
 	stream, err := js.Stream(ctx, appName)
