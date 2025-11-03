@@ -13,6 +13,12 @@ type Event[T any] struct {
 	Data      T
 }
 
+type EventBusConfig struct {
+	Provider string
+	Url      string
+	Appname  string
+}
+
 type Subscriber[T any] func(event Event[T]) error
 
 var appName string = "eventbus"

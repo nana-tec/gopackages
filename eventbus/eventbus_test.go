@@ -1,12 +1,18 @@
 package eventbus
 
 import (
+	"context"
 	"testing"
 	"time"
 )
 
 func TestEventBus(t *testing.T) {
-	bus := NewInternalEventBus[string]()
+	rootCtx := context.Background()
+	bus, err := NewInternalEventBus[string]()
+
+	if err != nil {
+		t.Fatalf("Failed to start internal event bus: %v", err)
+	}
 
 	subscriberCalled := false
 	subscriber := func(event Event[string]) error {
@@ -17,7 +23,7 @@ func TestEventBus(t *testing.T) {
 		return nil
 	}
 
-	err := bus.Subscribe("testevent", subscriber)
+	err = bus.Subscribe(rootCtx, "testevent", subscriber)
 	if err != nil {
 		t.Fatalf("Failed to subscribe: %v", err)
 	}
@@ -28,7 +34,7 @@ func TestEventBus(t *testing.T) {
 		Data:      "testdata",
 	}
 
-	err = bus.Dispatch(event)
+	err = bus.Dispatch(rootCtx, event)
 	if err != nil {
 		t.Fatalf("Failed to dispatch event: %v", err)
 	}
