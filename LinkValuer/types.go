@@ -59,7 +59,7 @@ type CallbackResponse struct {
 	PartnerReference string  `json:"partner_reference"`
 	CustomerName     string  `json:"customer_name"`
 	InsuranceCompany string  `json:"insurance_company"`
-	PolicyNumber     float64 `json:"policy_number"`
+	PolicyNumber     string  `json:"policy_number"`
 	MarketValue      float64 `json:"market_value"`
 	DutyFreeValue    float64 `json:"duty_free_value"`
 	WindscreenValue  float64 `json:"windscreen_value"`
