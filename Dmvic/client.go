@@ -531,7 +531,7 @@ func (c *client) IssueTypeBCertificate(req *TypeBIssuanceRequest) (*InsuranceRes
 	}
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
-		clientErr := newDMVICError("IssueTypeACertificate", ErrIssuanceTypeA, dmvicCode, resp.Error[0].ErrorText)
+		clientErr := newDMVICError("IssueTypeACertificate", ErrIssuanceTypeB, dmvicCode, resp.Error[0].ErrorText)
 		return nil, clientErr
 	}
 	return &resp, nil
@@ -545,7 +545,7 @@ func (c *client) IssueTypeCCertificate(req *TypeCIssuanceRequest) (*InsuranceRes
 	}
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
-		clientErr := newDMVICError("IssueTypeACertificate", ErrIssuanceTypeA, dmvicCode, resp.Error[0].ErrorText)
+		clientErr := newDMVICError("IssueTypeACertificate", ErrIssuanceTypeC, dmvicCode, resp.Error[0].ErrorText)
 		return nil, clientErr
 	}
 	return &resp, nil
@@ -559,7 +559,7 @@ func (c *client) IssueTypeDCertificate(req *TypeDIssuanceRequest) (*InsuranceRes
 	}
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
-		clientErr := newDMVICError("IssueTypeACertificate", ErrIssuanceTypeA, dmvicCode, resp.Error[0].ErrorText)
+		clientErr := newDMVICError("IssueTypeACertificate", ErrIssuanceTypeD, dmvicCode, resp.Error[0].ErrorText)
 		return nil, clientErr
 	}
 	return &resp, nil
