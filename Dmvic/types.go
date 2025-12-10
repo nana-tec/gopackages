@@ -1,6 +1,12 @@
 // Package dmvic provides types for DMVIC API request and response structures.
 package dmvic
 
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
 // LoginResponse represents the response from DMVIC login authentication.
 // It contains authentication token, user information, and session details.
 type LoginResponse struct {
@@ -117,9 +123,77 @@ type DoubleInsuranceResponse struct {
 	APIRequestNumber string                     `json:"apiRequestNumber"` // Unique API request identifier
 }
 
+// DoubleInsuranceList is a flexible type that can unmarshal from either an
+// array of DoubleInsuranceDetails or an object/map representation. Internally
+// it stores a slice for predictable iteration.
+type DoubleInsuranceList []DoubleInsuranceDetails
+
+// UnmarshalJSON supports three shapes:
+// - JSON array: [{...}, {...}]
+// - JSON object/map: {"key": {...}, ...}
+// - Single object: {...}
+func (d *DoubleInsuranceList) UnmarshalJSON(data []byte) error {
+	// Try as array
+	var arr []DoubleInsuranceDetails
+	if err := json.Unmarshal(data, &arr); err == nil {
+		*d = arr
+		return nil
+	}
+
+	// Try as map[string]DoubleInsuranceDetails
+	var m map[string]DoubleInsuranceDetails
+	if err := json.Unmarshal(data, &m); err == nil {
+		res := make([]DoubleInsuranceDetails, 0, len(m))
+		for _, v := range m {
+			res = append(res, v)
+		}
+		*d = res
+		return nil
+	}
+
+	// Try single object
+	var single DoubleInsuranceDetails
+	if err := json.Unmarshal(data, &single); err == nil {
+		*d = []DoubleInsuranceDetails{single}
+		return nil
+	}
+
+	return fmt.Errorf("DoubleInsurance: unsupported JSON format")
+}
+
 // DoubleInsuranceCallbackObj contains double insurance validation results.
 type DoubleInsuranceCallbackObj struct {
-	DoubleInsurance map[string]DoubleInsuranceDetails `json:"doubleInsurance"` // Map of double insurance details
+	DoubleInsurance DoubleInsuranceList `json:"doubleInsurance"` // Flexible list of double insurance details
+}
+
+// UnmarshalJSON makes DoubleInsuranceCallbackObj tolerant to different casing
+// of the "doubleInsurance" key (e.g. "DoubleInsurance"). It will look up any
+// key that case-insensitively matches "doubleinsurance" and unmarshal its value
+// into the DoubleInsuranceList.
+func (d *DoubleInsuranceCallbackObj) UnmarshalJSON(data []byte) error {
+	// Generic map to find the key regardless of case
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+	for k, v := range m {
+		if strings.EqualFold(k, "doubleinsurance") {
+			var list DoubleInsuranceList
+			if err := json.Unmarshal(v, &list); err != nil {
+				return fmt.Errorf("failed to unmarshal DoubleInsurance: %w", err)
+			}
+			d.DoubleInsurance = list
+			return nil
+		}
+	}
+	// If not found, try direct unmarshal into structure (in case data is the inner array)
+	var direct DoubleInsuranceList
+	if err := json.Unmarshal(data, &direct); err == nil {
+		d.DoubleInsurance = direct
+		return nil
+	}
+	// No recognized content
+	return fmt.Errorf("DoubleInsuranceCallbackObj: missing doubleInsurance key")
 }
 
 // BaseIssuanceFields contains common fields for insurance certificate issuance requests.
