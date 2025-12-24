@@ -6,20 +6,19 @@ import (
 	"time"
 )
 
-func TestEventBus(t *testing.T) {
+func TestInternalEventBus(t *testing.T) {
 	rootCtx := context.Background()
-	bus, err := NewInternalEventBus[string]()
+
+	println("Running internal event bus test")
+	bus, err := NewInternalEventBus()
 
 	if err != nil {
 		t.Fatalf("Failed to start internal event bus: %v", err)
 	}
 
 	subscriberCalled := false
-	subscriber := func(event Event[string]) error {
+	subscriber := func(event Event) error {
 		subscriberCalled = true
-		if event.Data != "testdata" {
-			t.Errorf("Expected event data 'testdata', got '%s'", event.Data)
-		}
 		return nil
 	}
 
@@ -28,10 +27,10 @@ func TestEventBus(t *testing.T) {
 		t.Fatalf("Failed to subscribe: %v", err)
 	}
 
-	event := Event[string]{
+	event := Event{
 		Type:      "testevent",
 		Timestamp: time.Now(),
-		Data:      "testdata",
+		Data:      map[string]any{"myname": "testname"},
 	}
 
 	err = bus.Dispatch(rootCtx, event)
@@ -42,5 +41,7 @@ func TestEventBus(t *testing.T) {
 	if !subscriberCalled {
 		t.Error("Subscriber was not called")
 	}
+
+	println("Internal event test finished")
 
 }

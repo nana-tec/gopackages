@@ -2,39 +2,30 @@ package eventbus
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
 // Event represents a generic event structure
-type Event[T any] struct {
+type Event struct {
 	Type      string
 	Timestamp time.Time
-	Data      T
+	Data      map[string]any
 }
 
-type EventBusConfig struct {
-	Provider string
-	Url      string
-	Appname  string
-}
-
-type Subscriber[T any] func(event Event[T]) error
-
-var appName string = "eventbus"
+type Subscriber func(event Event) error
 
 // EventBus is a simple event bus for publishing and subscribing to events
 
-type EventBus[T any] interface {
-	Subscribe(ctx context.Context, name string, subscriber Subscriber[T]) error
-	Dispatch(ctx context.Context, event Event[T]) error
+type EventBus interface {
+	Subscribe(ctx context.Context, name string, subscriber Subscriber) error
+	Dispatch(ctx context.Context, event Event) error
 	Close()
 }
 
-func NewEvent[T any](name string, data T, timestamp time.Time) Event[T] {
-	typename := fmt.Sprintf("%s.%s", appName, name)
-	return Event[T]{
-		Type:      typename,
+func NewEvent(name string, data map[string]any, timestamp time.Time) Event {
+
+	return Event{
+		Type:      name,
 		Timestamp: timestamp,
 		Data:      data,
 	}

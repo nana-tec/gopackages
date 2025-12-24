@@ -5,24 +5,30 @@ import (
 	"sync"
 )
 
-type InternalEventBus[T any] struct {
+type InternalEventBus struct {
 	mu          sync.RWMutex
-	subscribers map[string][]Subscriber[T]
+	subscribers map[string][]Subscriber
 }
 
-func NewInternalEventBus[T any]() (*InternalEventBus[T], error) {
-	return &InternalEventBus[T]{
-		subscribers: make(map[string][]Subscriber[T]),
+func NewInternalEventBus() (*InternalEventBus, error) {
+	return &InternalEventBus{
+		subscribers: make(map[string][]Subscriber),
 	}, nil
 }
-func (bus *InternalEventBus[T]) Subscribe(ctx context.Context, name string, subscriber Subscriber[T]) error {
+
+// Subscribe adds a subscriber to the given event name. The subscriber will be
+// called with the published event when the event is published to the
+// event bus. The subscriber must be safe to be called concurrently.
+// The subscriber will not be called if the event is published after the
+// subscriber is unsubscribed or the event bus is closed.
+func (bus *InternalEventBus) Subscribe(ctx context.Context, name string, subscriber Subscriber) error {
 	bus.mu.Lock()
 	defer bus.mu.Unlock()
 	bus.subscribers[name] = append(bus.subscribers[name], subscriber)
 	return nil
 }
 
-func (bus *InternalEventBus[T]) Dispatch(ctx context.Context, event Event[T]) error {
+func (bus *InternalEventBus) Dispatch(ctx context.Context, event Event) error {
 	bus.mu.Lock()
 	defer bus.mu.Unlock()
 	for _, subscriber := range bus.subscribers[event.Type] {
@@ -33,8 +39,8 @@ func (bus *InternalEventBus[T]) Dispatch(ctx context.Context, event Event[T]) er
 	return nil
 }
 
-func (bus *InternalEventBus[T]) Close() {
+func (bus *InternalEventBus) Close() {
 	bus.mu.Lock()
 	defer bus.mu.Unlock()
-	bus.subscribers = make(map[string][]Subscriber[T])
+	bus.subscribers = make(map[string][]Subscriber)
 }
