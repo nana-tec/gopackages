@@ -1,5 +1,11 @@
 package quotation
 
+import (
+	"context"
+
+	dmvic "github.com/nana-tec/gopackages/Dmvic"
+)
+
 type CoverDetails struct {
 	StartDate string
 	Period    int
@@ -18,6 +24,6 @@ type ClientDetails struct {
 }
 
 type QuotationValidator interface {
-	ValidateQuotationRequest(cover *CoverDetails, risk *RiskDetails, client *ClientDetails) (bool, error)
-	ValidateDmvicRiskRequest(cover *CoverDetails, risk *RiskDetails) (bool, error)
+	ValidateQuotationRequest(ctx context.Context, cover *CoverDetails, risk *RiskDetails, client *ClientDetails) (bool, error)
+	ValidateDmvicRiskRequest(ctx context.Context, cover *CoverDetails, risk *dmvic.RiskDetails) (dmvic.MotorCoverValidationResponse, error)
 }

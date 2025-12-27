@@ -31,30 +31,50 @@ func TestQuotationValidator(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create dmvic client : %v", err)
 	}
+
+	println("Creating Dmvic Service  ")
+	dmvicSrv, err := dmvic.NewDmvicServiceInstance(dmvicClient)
+	if err != nil {
+		t.Fatalf("Failed to create dmvic Srv : %v", err)
+	}
+
 	println("Creating Quotation Validator  ")
-	quotationValidator, err := NewQuotationValidatorInstance(dmvicClient)
+	quotationValidator, err := NewQuotationValidatorInstance(dmvicSrv)
 	if err != nil {
 		t.Fatalf("Failed to create quotation validator : %v", err)
 	}
 
-	println("Validator risk with dmvic  ")
+	println("Validating risk with dmvic  ")
 
 	coverDet := &CoverDetails{
 		StartDate: "2025-12-26",
 		Period:    31,
 	}
-	riskDet := &RiskDetails{
-		RegistrationNumber: "KDP343W",
-		ChassisNumber:      "JIT123DFREW1212398",
-		OtherDetails:       map[string]any{"make": "toyota"},
+	riskDet := &dmvic.RiskDetails{
+		RegistrationNumber: "KDM330X",
+		ChassisNumber:      "",
 	}
-	isValid, err := quotationValidator.ValidateDmvicRiskRequest(coverDet, riskDet)
+	validation, err := quotationValidator.ValidateDmvicRiskRequest(rootCtx, coverDet, riskDet)
 	if err != nil {
 		t.Fatalf("Failed to validate risk : %v", err)
 	}
 
-	if !isValid {
-		t.Fatalf("Risk is not valid : %v", err)
+	// for production kdm has active cover else it should be true
+	if dmvicConfig.Environment == dmvic.Production {
+		if !validation.HasActiveCover {
+			t.Fatalf("Risk should be having an active cover in production : %v", err)
+		}
+
+	}
+
+	if dmvicConfig.Environment == dmvic.UAT {
+
+		if validation.HasActiveCover {
+			t.Fatalf("Risk should not be having an active cover in UAT : %v", err)
+		}
+
 	}
 
 }
+
+//go test -v --run TestQuotationValidator ./insurance/quotation

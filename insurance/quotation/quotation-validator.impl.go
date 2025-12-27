@@ -1,52 +1,42 @@
 package quotation
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	dmvic "github.com/nana-tec/gopackages/Dmvic"
 )
 
-type QuotationValidatorInstance struct {
-	DmvicClient dmvic.Client
+type quotationValidatorInstance struct {
+	dmvicService dmvic.DmvicService
 }
 
-func NewQuotationValidatorInstance(DmvicClient dmvic.Client) (*QuotationValidatorInstance, error) {
+func NewQuotationValidatorInstance(DmvicService dmvic.DmvicService) (QuotationValidator, error) {
 
-	return &QuotationValidatorInstance{
-		DmvicClient: DmvicClient,
+	return &quotationValidatorInstance{
+		dmvicService: DmvicService,
 	}, nil
 }
 
-func (qval *QuotationValidatorInstance) ValidateQuotationRequest(cover *CoverDetails, risk *RiskDetails, client *ClientDetails) (bool, error) {
+func (qval *quotationValidatorInstance) ValidateQuotationRequest(ctx context.Context, cover *CoverDetails, risk *RiskDetails, client *ClientDetails) (bool, error) {
 	return true, nil
 }
 
-func (qval *QuotationValidatorInstance) ValidateDmvicRiskRequest(cover *CoverDetails, risk *RiskDetails) (bool, error) {
+func (qval *quotationValidatorInstance) ValidateDmvicRiskRequest(ctx context.Context, cover *CoverDetails, risk *dmvic.RiskDetails) (dmvic.MotorCoverValidationResponse, error) {
 	t, err := time.Parse(time.DateOnly, cover.StartDate)
 	if err != nil {
-		return false, fmt.Errorf("Invalid start date  %w", err)
+		return dmvic.MotorCoverValidationResponse{}, fmt.Errorf("Invalid start date  %w", err)
 	}
+
+	startDateFormated := t.Format("02/01/2006")
 	newDate := t.AddDate(0, 0, cover.Period)
+	endDateFormated := newDate.Format("02/01/2006")
 
-	pendDate := newDate.Format("02/01/2006")
-	endDateFormated := t.Format("02/01/2006")
-
-	validationReq := &dmvic.DoubleInsuranceRequest{
-		PolicyStartDate:           endDateFormated,
-		PolicyEndDate:             pendDate,
-		VehicleRegistrationNumber: risk.RegistrationNumber,
-		ChassisNumber:             risk.ChassisNumber,
+	reqCoverDet := dmvic.CoverDetails{
+		StartDate: startDateFormated,
+		EndDate:   endDateFormated,
 	}
-	dmvicResp, err := qval.DmvicClient.ValidateDoubleInsurance(validationReq)
-	if err != nil {
-		return false, fmt.Errorf("failed to validate dmvic request  %w", err)
-	}
+	return qval.dmvicService.MotorCoverValidation(ctx, reqCoverDet, risk)
 
-	if dmvicResp.Success {
-		// later check the resp
-		return true, nil
-	}
-
-	return true, nil
 }
