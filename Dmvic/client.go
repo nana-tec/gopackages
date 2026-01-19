@@ -510,6 +510,7 @@ func (c *client) ValidateDoubleInsurance(req *DoubleInsuranceRequest) (*DoubleIn
 }
 
 func (c *client) IssueTypeACertificate(req *TypeAIssuanceRequest) (*InsuranceResponse, error) {
+
 	var resp InsuranceResponse
 	err := c.makeAPICall(http.MethodPost, "/V4/IntermediaryIntegration/IssuanceTypeACertificate", req, &resp, ErrIssuanceTypeA)
 	if err != nil {

@@ -43,6 +43,8 @@ type DoubleInsuranceDetails struct {
 	MemberCompanyName      string `json:"MemberCompanyName"`
 	RegistrationNumber     string `json:"RegistrationNumber"`
 	ChassisNumber          string `json:"ChassisNumber"`
+	CertificateStatus      string `json:"CertificateStatus"`
+	InsurancePolicyNo      string `json:"InsurancePolicyNo"`
 }
 
 // CallbackURL contains callback URL information for asynchronous operations.
