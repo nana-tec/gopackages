@@ -280,9 +280,11 @@ type IssuanceCallbackObj struct {
 // IssuanceDetails contains detailed information about an issued insurance certificate.
 // It includes transaction number, actual certificate number, and email of the certificate holder.
 type IssuanceDetails struct {
-	TransactionNo string `json:"TransactionNo"` // Transaction number for the issuance operation
-	ActualCNo     string `json:"actualCNo"`     // Actual certificate number issued
-	Email         string `json:"Email"`         // Email of the certificate holder
+	TransactionNo     string `json:"TransactionNo"`     // Transaction number for the issuance operation
+	ActualCNo         string `json:"actualCNo"`         // Actual certificate number issued
+	Email             string `json:"Email"`             // Email of the certificate holder
+	IssuanceRequestID string `json:"IssuanceRequestID"` // Server response ID FROM DMVIC
+	IssuanceMessage   string `json:"IssuanceMessage"`   // Message accompanying the request
 }
 
 // StockResponse represents the response from stock retrieval operations.
