@@ -274,17 +274,17 @@ type InsuranceResponse struct {
 // IssuanceCallbackObj contains the results of the insurance certificate issuance operation.
 // It includes details about the issued certificate such as transaction number, actual certificate number, and email.
 type IssuanceCallbackObj struct {
-	IssueCertificate IssuanceDetails `json:"issueCertificate"` // Details of the issued certificate
+	IssueCertificate  IssuanceDetails `json:"issueCertificate"`  // Details of the issued certificate
+	IssuanceRequestID string          `json:"IssuanceRequestID"` // Server response ID FROM DMVIC
+	IssuanceMessage   string          `json:"IssuanceMessage"`   // Message accompanying the request
 }
 
 // IssuanceDetails contains detailed information about an issued insurance certificate.
 // It includes transaction number, actual certificate number, and email of the certificate holder.
 type IssuanceDetails struct {
-	TransactionNo     string `json:"TransactionNo"`     // Transaction number for the issuance operation
-	ActualCNo         string `json:"actualCNo"`         // Actual certificate number issued
-	Email             string `json:"Email"`             // Email of the certificate holder
-	IssuanceRequestID string `json:"IssuanceRequestID"` // Server response ID FROM DMVIC
-	IssuanceMessage   string `json:"IssuanceMessage"`   // Message accompanying the request
+	TransactionNo string `json:"TransactionNo"` // Transaction number for the issuance operation
+	ActualCNo     string `json:"actualCNo"`     // Actual certificate number issued
+	Email         string `json:"Email"`         // Email of the certificate holder
 }
 
 // StockResponse represents the response from stock retrieval operations.
