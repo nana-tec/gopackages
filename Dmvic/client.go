@@ -461,7 +461,7 @@ func (c *client) GetCertificate(certificateNumber string) (*CertificateResponse,
 	}
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
-		return nil, newDMVICError("GetCertificate", ErrGetCertificate, dmvicCode, resp.Error[0].ErrorText)
+		return &resp, newDMVICError("GetCertificate", ErrGetCertificate, dmvicCode, resp.Error[0].ErrorText)
 	}
 	return &resp, nil
 }
@@ -474,7 +474,7 @@ func (c *client) ValidateInsurance(req *InsuranceValidationRequest) (*InsuranceV
 	}
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
-		return nil, newDMVICError("ValidateInsurance", ErrValidateInsurance, dmvicCode, resp.Error[0].ErrorText)
+		return &resp, newDMVICError("ValidateInsurance", ErrValidateInsurance, dmvicCode, resp.Error[0].ErrorText)
 	}
 	return &resp, nil
 }
@@ -491,7 +491,7 @@ func (c *client) CancelCertificate(certificateNumber string, reasonID int) (*Can
 	}
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
-		return nil, newDMVICError("CancelCertificate", ErrCancelCertificate, dmvicCode, resp.Error[0].ErrorText)
+		return &resp, newDMVICError("CancelCertificate", ErrCancelCertificate, dmvicCode, resp.Error[0].ErrorText)
 	}
 	return &resp, nil
 }
@@ -504,7 +504,7 @@ func (c *client) ValidateDoubleInsurance(req *DoubleInsuranceRequest) (*DoubleIn
 	}
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
-		return nil, newDMVICError("ValidateDoubleInsurance", ErrValidateDoubleInsurance, dmvicCode, resp.Error[0].ErrorText)
+		return &resp, newDMVICError("ValidateDoubleInsurance", ErrValidateDoubleInsurance, dmvicCode, resp.Error[0].ErrorText)
 	}
 	return &resp, nil
 }
@@ -518,7 +518,7 @@ func (c *client) IssueTypeACertificate(req *TypeAIssuanceRequest) (*InsuranceRes
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
 		clientErr := newDMVICError("IssueTypeACertificate", ErrIssuanceTypeA, dmvicCode, resp.Error[0].ErrorText)
-		return nil, clientErr
+		return &resp, clientErr
 	}
 	return &resp, nil
 }
@@ -532,7 +532,7 @@ func (c *client) IssueTypeBCertificate(req *TypeBIssuanceRequest) (*InsuranceRes
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
 		clientErr := newDMVICError("IssueTypeBCertificate", ErrIssuanceTypeB, dmvicCode, resp.Error[0].ErrorText)
-		return nil, clientErr
+		return &resp, clientErr
 	}
 	return &resp, nil
 }
@@ -546,7 +546,7 @@ func (c *client) IssueTypeCCertificate(req *TypeCIssuanceRequest) (*InsuranceRes
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
 		clientErr := newDMVICError("IssueTypeCCertificate", ErrIssuanceTypeC, dmvicCode, resp.Error[0].ErrorText)
-		return nil, clientErr
+		return &resp, clientErr
 	}
 	return &resp, nil
 }
@@ -560,7 +560,7 @@ func (c *client) IssueTypeDCertificate(req *TypeDIssuanceRequest) (*InsuranceRes
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
 		clientErr := newDMVICError("IssueTypeDCertificate", ErrIssuanceTypeD, dmvicCode, resp.Error[0].ErrorText)
-		return nil, clientErr
+		return &resp, clientErr
 	}
 	return &resp, nil
 }
@@ -574,7 +574,7 @@ func (c *client) GetMemberCompanyStock(memberCompanyID int) (*StockResponse, err
 	}
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
-		return nil, newDMVICError("GetMemberCompanyStock", ErrMemberCompanyStock, dmvicCode, resp.Error[0].ErrorText)
+		return &resp, newDMVICError("GetMemberCompanyStock", ErrMemberCompanyStock, dmvicCode, resp.Error[0].ErrorText)
 	}
 	return &resp, nil
 }
@@ -587,7 +587,7 @@ func (c *client) ConfirmCertificateIssuance(req *ConfirmationRequest) (*Insuranc
 	}
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
-		return nil, newDMVICError("ConfirmCertificateIssuance", ErrConfirmIssuance, dmvicCode, resp.Error[0].ErrorText)
+		return &resp, newDMVICError("ConfirmCertificateIssuance", ErrConfirmIssuance, dmvicCode, resp.Error[0].ErrorText)
 	}
 	return &resp, nil
 }
