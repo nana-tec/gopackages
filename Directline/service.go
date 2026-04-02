@@ -110,6 +110,111 @@ func (c *Client) CreatePrivateTPO(ctx context.Context, req *TransactionRequest) 
 	return c.CreateTransaction(ctx, EndpointPrivateTPO, req)
 }
 
+// New convenience wrappers added for other vehicle/product types
+func (c *Client) CreateMatatuComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointMatatuComp, req)
+}
+
+func (c *Client) CreateMatatuTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointMatatuTPO, req)
+}
+
+func (c *Client) CreateTaxiComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointTaxiComp, req)
+}
+
+func (c *Client) CreateTaxiTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointTaxiTPO, req)
+}
+
+func (c *Client) CreatePrivateHireComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointPrivateHireComp, req)
+}
+
+func (c *Client) CreatePrivateHireTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointPrivateHireTPO, req)
+}
+
+func (c *Client) CreateOwnGoodsComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointOwnGoodsComp, req)
+}
+
+func (c *Client) CreateOwnGoodsTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointOwnGoodsTPO, req)
+}
+
+func (c *Client) CreateInstitutionalComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointInstitutionalComp, req)
+}
+
+func (c *Client) CreateInstitutionalTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointInstitutionalTPO, req)
+}
+
+func (c *Client) CreatePrimeMoverComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointPrimeMoverComp, req)
+}
+
+func (c *Client) CreatePrimeMoverTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointPrimeMoverTPO, req)
+}
+
+func (c *Client) CreateTrailerComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointTrailerComp, req)
+}
+
+func (c *Client) CreateTrailerTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointTrailerTPO, req)
+}
+
+func (c *Client) CreateTankersComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointTankersComp, req)
+}
+
+func (c *Client) CreateTankersTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointTankersTPO, req)
+}
+
+func (c *Client) CreateBikeComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointBikeComp, req)
+}
+
+func (c *Client) CreateBikeTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointBikeTPO, req)
+}
+
+func (c *Client) CreateBodaComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointBodaComp, req)
+}
+
+func (c *Client) CreateBodaTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointBodaTPO, req)
+}
+
+func (c *Client) CreateGeneralCartageComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointGeneralCartageComp, req)
+}
+
+func (c *Client) CreateGeneralCartageTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointGeneralCartageTPO, req)
+}
+
+func (c *Client) CreateTractorComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointTractorComp, req)
+}
+
+func (c *Client) CreateTractorTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointTractorTPO, req)
+}
+
+func (c *Client) CreateFlammableTankersComprehensive(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointFlammableTankersComp, req)
+}
+
+func (c *Client) CreateFlammableTankersTPO(ctx context.Context, req *TransactionRequest) (*TransactionResponse, *ValidationErrorResponse, error) {
+	return c.CreateTransaction(ctx, EndpointFlammableTankersTPO, req)
+}
+
 func mustMarshal(v interface{}) []byte {
 	b, _ := jsonMarshal(v)
 	return b
