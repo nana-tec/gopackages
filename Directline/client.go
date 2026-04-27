@@ -10,16 +10,14 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/nana-tec/gopackages/LinkValuer"
 )
 
 // Client provides methods to interact with Directline API
 type Client struct {
 	cfg       *Config
 	http      *http.Client
-	tokens    *linkvaluer.TTLCache[string, string]
-	bodyTypes *linkvaluer.TTLCache[int, []BodyType]
+	tokens    *TTLCache[string, string]
+	bodyTypes *TTLCache[int, []BodyType]
 	mu        sync.Mutex
 	endpoint  string
 	debug     bool
@@ -43,8 +41,8 @@ func NewClient(cfg *Config) (*Client, error) {
 	c := &Client{
 		cfg:       cfg,
 		http:      hc,
-		tokens:    linkvaluer.NewTTL[string, string](cfg.TokenTTL),
-		bodyTypes: linkvaluer.NewTTL[int, []BodyType](1 * time.Hour),
+		tokens:    NewTTL[string, string](cfg.TokenTTL),
+		bodyTypes: NewTTL[int, []BodyType](1 * time.Hour),
 		endpoint:  strings.TrimRight(cfg.BaseURL, "/"),
 		debug:     cfg.Debug,
 	}
