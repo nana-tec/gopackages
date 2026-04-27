@@ -108,7 +108,7 @@ func (c *Client) GetToken(ctx context.Context) (string, error) {
 	// compute ttl
 	ttl := c.cfg.TokenTTL
 	if tr.ExpiresIn > 0 {
-		ttl = time.Duration(tr.ExpiresIn) * time.Second
+		ttl = tr.ExpiresIn.Duration()
 	}
 	c.tokens.Set("directline_token", tr.AccessToken, ttl)
 	return tr.AccessToken, nil
