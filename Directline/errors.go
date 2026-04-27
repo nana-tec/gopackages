@@ -31,17 +31,17 @@ type APIError struct {
 	Debug     bool
 }
 
-func (c *APIError) debugLog(format string, args ...any) {
-	if c.Debug {
+func (e *APIError) debugLog(format string, args ...any) {
+	if e.Debug {
 		fmt.Printf("[Directline DEBUG] "+format+"\n", args...)
 	}
 }
 
 func (e *APIError) Error() string {
+	e.debugLog("directline error %d: %s", e.Code, e.Message)
 	if e.Operation != "" {
 		return fmt.Sprintf("directline %s error %d: %s", e.Operation, e.Code, e.Message)
 	}
-	e.debugLog("directline error %d: %s", e.Code, e.Message)
 	return fmt.Sprintf("directline error %d: %s", e.Code, e.Message)
 }
 
