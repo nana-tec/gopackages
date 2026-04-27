@@ -145,6 +145,7 @@ func (c *Client) doAuthJSON(ctx context.Context, method, path string, payload []
 	if err != nil {
 		return resp.StatusCode, newInternalError("doAuthJSON:read", ErrReadResponse, err, c.IsDebug())
 	}
+	c.debugLog("status=%d body=%s", resp.StatusCode, string(b))
 	if resp.StatusCode == http.StatusUnauthorized {
 		// try refresh
 		if _, err := c.GetToken(ctx); err != nil {
