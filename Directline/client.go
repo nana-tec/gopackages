@@ -31,7 +31,7 @@ func NewClient(cfg *Config) (*Client, error) {
 		cfg.BaseURL = "https://api.directline.co.ke/hayabusa"
 	}
 	if err := cfg.Validate(); err != nil {
-		return nil, newInternalError("NewClient", ErrInvalidConfig, err)
+		return nil, newInternalError("NewClient", ErrInvalidConfig, err, cfg.Debug)
 	}
 	hc := cfg.NewHTTPClient()
 	if hc == nil {
@@ -49,6 +49,14 @@ func NewClient(cfg *Config) (*Client, error) {
 		debug:     cfg.Debug,
 	}
 	return c, nil
+}
+
+func (c *Client) IsDebug() bool {
+	return c.debug
+}
+
+func (c *Client) SetDebug(v bool) {
+	c.debug = v
 }
 
 func (c *Client) debugLog(format string, args ...any) {
@@ -71,33 +79,33 @@ func (c *Client) GetToken(ctx context.Context) (string, error) {
 	// request new token
 	p, err := json.Marshal(c.cfg.Credentials)
 	if err != nil {
-		return "", newInternalError("GetToken:marshal", ErrMarshalRequest, err)
+		return "", newInternalError("GetToken:marshal", ErrMarshalRequest, err, c.IsDebug())
 	}
 	url := c.endpoint + "/api/token/generate"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(p))
 	if err != nil {
-		return "", newInternalError("GetToken:create", ErrCreateRequest, err)
+		return "", newInternalError("GetToken:create", ErrCreateRequest, err, c.IsDebug())
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return "", newExternalError("GetToken:do", ErrHTTPRequest, err.Error(), 0)
+		return "", newExternalError("GetToken:do", ErrHTTPRequest, err.Error(), 0, c.IsDebug())
 	}
 	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", newInternalError("GetToken:read", ErrReadResponse, err)
+		return "", newInternalError("GetToken:read", ErrReadResponse, err, c.IsDebug())
 	}
 	c.debugLog("token status=%d body=%s", resp.StatusCode, string(body))
 	if resp.StatusCode != http.StatusOK {
-		return "", newAuthError("GetToken", ErrLoginFailed, string(body))
+		return "", newAuthError("GetToken", ErrLoginFailed, string(body), c.IsDebug())
 	}
 	var tr TokenResponse
 	if err := json.Unmarshal(body, &tr); err != nil {
-		return "", newInternalError("GetToken:unmarshal", ErrUnmarshalResponse, err)
+		return "", newInternalError("GetToken:unmarshal", ErrUnmarshalResponse, err, c.IsDebug())
 	}
 	if tr.AccessToken == "" {
-		return "", newAuthError("GetToken", ErrLoginFailed, "missing access token")
+		return "", newAuthError("GetToken", ErrLoginFailed, "missing access token", c.IsDebug())
 	}
 	// compute ttl
 	ttl := c.cfg.TokenTTL
@@ -124,7 +132,7 @@ func (c *Client) doAuthJSON(ctx context.Context, method, path string, payload []
 	url := c.endpoint + ensureLeadingSlash(path)
 	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(payload))
 	if err != nil {
-		return 0, newInternalError("doAuthJSON:create", ErrCreateRequest, err)
+		return 0, newInternalError("doAuthJSON:create", ErrCreateRequest, err, c.IsDebug())
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if tok, ok := c.tokens.Get("directline_token"); ok {
@@ -132,12 +140,12 @@ func (c *Client) doAuthJSON(ctx context.Context, method, path string, payload []
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return 0, newExternalError("doAuthJSON:do", ErrHTTPRequest, err.Error(), 0)
+		return 0, newExternalError("doAuthJSON:do", ErrHTTPRequest, err.Error(), 0, c.IsDebug())
 	}
 	defer func() { _ = resp.Body.Close() }()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return resp.StatusCode, newInternalError("doAuthJSON:read", ErrReadResponse, err)
+		return resp.StatusCode, newInternalError("doAuthJSON:read", ErrReadResponse, err, c.IsDebug())
 	}
 	if resp.StatusCode == http.StatusUnauthorized {
 		// try refresh
@@ -150,29 +158,30 @@ func (c *Client) doAuthJSON(ctx context.Context, method, path string, payload []
 		}
 		resp2, err := c.http.Do(req)
 		if err != nil {
-			return 0, newExternalError("doAuthJSON:retry", ErrHTTPRequest, err.Error(), 0)
+			return 0, newExternalError("doAuthJSON:retry", ErrHTTPRequest, err.Error(), 0, c.IsDebug())
 		}
 		defer func() { _ = resp2.Body.Close() }()
 		b, err = io.ReadAll(resp2.Body)
 		if err != nil {
-			return resp2.StatusCode, newInternalError("doAuthJSON:read-retry", ErrReadResponse, err)
+			return resp2.StatusCode, newInternalError("doAuthJSON:read-retry", ErrReadResponse, err, c.IsDebug())
 		}
+		c.debugLog("token status=%d body=%s", resp2.StatusCode, string(b))
 		if resp2.StatusCode != http.StatusOK && resp2.StatusCode != http.StatusCreated {
-			return resp2.StatusCode, newExternalError("doAuthJSON", ErrHTTPRequest, string(b), resp2.StatusCode)
+			return resp2.StatusCode, newExternalError("doAuthJSON", ErrHTTPRequest, string(b), resp2.StatusCode, c.IsDebug())
 		}
 		if out != nil {
 			if err := json.Unmarshal(b, out); err != nil {
-				return resp2.StatusCode, newInternalError("doAuthJSON:unmarshal-retry", ErrUnmarshalResponse, err)
+				return resp2.StatusCode, newInternalError("doAuthJSON:unmarshal-retry", ErrUnmarshalResponse, err, c.IsDebug())
 			}
 		}
 		return resp2.StatusCode, nil
 	}
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return resp.StatusCode, newExternalError("doAuthJSON", ErrHTTPRequest, string(b), resp.StatusCode)
+		return resp.StatusCode, newExternalError("doAuthJSON", ErrHTTPRequest, string(b), resp.StatusCode, c.IsDebug())
 	}
 	if out != nil {
 		if err := json.Unmarshal(b, out); err != nil {
-			return resp.StatusCode, newInternalError("doAuthJSON:unmarshal", ErrUnmarshalResponse, err)
+			return resp.StatusCode, newInternalError("doAuthJSON:unmarshal", ErrUnmarshalResponse, err, c.IsDebug())
 		}
 	}
 	return resp.StatusCode, nil
