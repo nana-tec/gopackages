@@ -28,23 +28,31 @@ type APIError struct {
 	Message   string
 	Operation string
 	HTTPCode  int
+	Debug     bool
+}
+
+func (c *APIError) debugLog(format string, args ...any) {
+	if c.Debug {
+		fmt.Printf("[Directline DEBUG] "+format+"\n", args...)
+	}
 }
 
 func (e *APIError) Error() string {
 	if e.Operation != "" {
 		return fmt.Sprintf("directline %s error %d: %s", e.Operation, e.Code, e.Message)
 	}
+	e.debugLog("directline error %d: %s", e.Code, e.Message)
 	return fmt.Sprintf("directline error %d: %s", e.Code, e.Message)
 }
 
-func newInternalError(op string, code int, err error) *APIError {
-	return &APIError{Kind: Internal, Code: code, Message: err.Error(), Operation: op}
+func newInternalError(op string, code int, err error, debug bool) *APIError {
+	return &APIError{Kind: Internal, Code: code, Message: err.Error(), Operation: op, Debug: debug}
 }
 
-func newExternalError(op string, code int, message string, httpCode int) *APIError {
-	return &APIError{Kind: External, Code: code, Message: message, Operation: op, HTTPCode: httpCode}
+func newExternalError(op string, code int, message string, httpCode int, debug bool) *APIError {
+	return &APIError{Kind: External, Code: code, Message: message, Operation: op, HTTPCode: httpCode, Debug: debug}
 }
 
-func newAuthError(op string, code int, message string) *APIError {
-	return &APIError{Kind: Auth, Code: code, Message: message, Operation: op}
+func newAuthError(op string, code int, message string, debug bool) *APIError {
+	return &APIError{Kind: Auth, Code: code, Message: message, Operation: op, Debug: debug}
 }
