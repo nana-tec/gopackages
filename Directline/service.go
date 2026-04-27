@@ -43,7 +43,7 @@ func (c *Client) CreateTransaction(ctx context.Context, endpoint string, req *Tr
 	if status == http.StatusOK || status == http.StatusCreated {
 		return &out, nil, nil
 	}
-	return nil, nil, newExternalError("CreateTransaction", ErrHTTPRequest, "unexpected status", status)
+	return nil, nil, newExternalError("CreateTransaction", ErrHTTPRequest, "unexpected status", status, c.IsDebug())
 }
 
 // CalculatePremiumDetailed posts to /api/premium/calculate and returns PremiumResponse on 200 or PremiumErrorResponse on 400
@@ -61,7 +61,7 @@ func (c *Client) CalculatePremiumDetailed(ctx context.Context, req *PremiumReque
 	if status == http.StatusOK || status == http.StatusCreated {
 		return &out, nil, nil
 	}
-	return nil, nil, newExternalError("CalculatePremiumDetailed", ErrHTTPRequest, "unexpected status", status)
+	return nil, nil, newExternalError("CalculatePremiumDetailed", ErrHTTPRequest, "unexpected status", status, c.IsDebug())
 }
 
 // GetBodyTypesFor retrieves available body types for a vehicleTypeId and caches results for 1 hour
@@ -78,10 +78,10 @@ func (c *Client) GetBodyTypesFor(ctx context.Context, vehicleTypeId int) ([]Body
 		return nil, err
 	}
 	if status == http.StatusNotFound {
-		return nil, newExternalError("GetBodyTypesFor", ErrHTTPRequest, fmt.Sprintf("no body types for vehicleTypeId %d", vehicleTypeId), status)
+		return nil, newExternalError("GetBodyTypesFor", ErrHTTPRequest, fmt.Sprintf("no body types for vehicleTypeId %d", vehicleTypeId), status, c.IsDebug())
 	}
 	if status != http.StatusOK {
-		return nil, newExternalError("GetBodyTypesFor", ErrHTTPRequest, "unexpected status", status)
+		return nil, newExternalError("GetBodyTypesFor", ErrHTTPRequest, "unexpected status", status, c.IsDebug())
 	}
 	// map response to []BodyType
 	out := make([]BodyType, 0, len(resp.BodyTypes))
