@@ -1,13 +1,57 @@
 package directline
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// ExpiresInSeconds is a helper to unmarshal expires_in which can be
+// either a number (seconds) or a string like "60 Seconds".
+type ExpiresInSeconds int
+
+// UnmarshalJSON supports both numeric and string values for expires_in.
+func (e *ExpiresInSeconds) UnmarshalJSON(b []byte) error {
+	// try number first
+	var n int64
+	if err := json.Unmarshal(b, &n); err == nil {
+		*e = ExpiresInSeconds(n)
+		return nil
+	}
+	// try string
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return fmt.Errorf("expires_in: invalid type: %w", err)
+	}
+	s = strings.TrimSpace(s)
+	// extract first integer found in the string
+	re := regexp.MustCompile(`\d+`)
+	m := re.FindString(s)
+	if m == "" {
+		return fmt.Errorf("expires_in: no numeric value in %q", s)
+	}
+	v, err := strconv.ParseInt(m, 10, 64)
+	if err != nil {
+		return fmt.Errorf("expires_in: parse int: %w", err)
+	}
+	*e = ExpiresInSeconds(v)
+	return nil
+}
+
+// Duration returns the duration represented by ExpiresInSeconds.
+func (e ExpiresInSeconds) Duration() time.Duration {
+	return time.Duration(int(e)) * time.Second
+}
 
 // TokenResponse models the token generation response from Directline
 type TokenResponse struct {
-	Success     bool   `json:"success"`
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int    `json:"expires_in"`
-	Message     string `json:"message"`
+	Success     bool             `json:"success"`
+	AccessToken string           `json:"access_token"`
+	ExpiresIn   ExpiresInSeconds `json:"expires_in"`
+	Message     string           `json:"message"`
 }
 
 // CreateTransactionRequest minimal sample
