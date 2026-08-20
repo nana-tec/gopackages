@@ -54,6 +54,10 @@ type Client interface {
 	// GetMemberCompanyStock retrieves stock information for a member company.
 	GetMemberCompanyStock(memberCompanyID int) (*StockResponse, error)
 
+	// GetMemberIntermediaryStock retrieves stock information for a member
+	// intermediary.
+	GetMemberIntermediaryStock(memberIntermediaryID int) (*StockResponse, error)
+
 	// GetToken returns the current authentication token.
 	GetToken() string
 
