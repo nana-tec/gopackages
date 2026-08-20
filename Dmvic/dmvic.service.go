@@ -21,8 +21,22 @@ type MotorCoverValidationResponse struct {
 	ValidationMessage string
 }
 
+// StockCheckResponse is the distilled result of a certificate-stock check: the
+// per-classification stock lines available to the entity, plus the DMVIC
+// request id for tracing.
+type StockCheckResponse struct {
+	Stock            []StockDetails
+	APIRequestNumber string
+}
+
 type DmvicService interface {
 	MotorCoverValidation(ctx context.Context, coverdet CoverDetails, riskDet *RiskDetails) (MotorCoverValidationResponse, error)
+	// MemberCompanyStock returns the certificate stock available to the given
+	// member company.
+	MemberCompanyStock(ctx context.Context, memberCompanyID int) (StockCheckResponse, error)
+	// IntermediaryStock returns the certificate stock available to the given
+	// member intermediary.
+	IntermediaryStock(ctx context.Context, memberIntermediaryID int) (StockCheckResponse, error)
 	GetToken(ctx context.Context) (string, error)
 }
 
@@ -80,6 +94,43 @@ func (ds *dmvicServiceInstance) MotorCoverValidation(ctx context.Context, coverd
 
 	return MotorCoverValidationResponse{HasActiveCover: false, ValidationMessage: "No Active Cover"}, nil
 
+}
+
+// MemberCompanyStock returns the certificate stock available to a member
+// company. The client handles auth and surfaces DMVIC business errors (e.g. an
+// invalid member company id) as a typed error, which is wrapped and returned.
+func (ds *dmvicServiceInstance) MemberCompanyStock(ctx context.Context, memberCompanyID int) (StockCheckResponse, error) {
+	var out StockCheckResponse
+	if memberCompanyID <= 0 {
+		return out, fmt.Errorf("member company id is required")
+	}
+
+	resp, err := ds.dmvicClient.GetMemberCompanyStock(memberCompanyID)
+	if err != nil {
+		return out, fmt.Errorf("failed to fetch member company stock: %w", err)
+	}
+
+	out.Stock = resp.CallbackObj.MemberCompanyStock
+	out.APIRequestNumber = resp.APIRequestNumber
+	return out, nil
+}
+
+// IntermediaryStock returns the certificate stock available to a member
+// intermediary. Same contract as MemberCompanyStock.
+func (ds *dmvicServiceInstance) IntermediaryStock(ctx context.Context, memberIntermediaryID int) (StockCheckResponse, error) {
+	var out StockCheckResponse
+	if memberIntermediaryID <= 0 {
+		return out, fmt.Errorf("member intermediary id is required")
+	}
+
+	resp, err := ds.dmvicClient.GetMemberIntermediaryStock(memberIntermediaryID)
+	if err != nil {
+		return out, fmt.Errorf("failed to fetch intermediary stock: %w", err)
+	}
+
+	out.Stock = resp.CallbackObj.MemberCompanyStock
+	out.APIRequestNumber = resp.APIRequestNumber
+	return out, nil
 }
 
 func (ds *dmvicServiceInstance) GetToken(ctx context.Context) (string, error) {
