@@ -297,9 +297,32 @@ type StockResponse struct {
 }
 
 // StockCallbackObj contains stock information for insurance certificates.
-// It includes a list of stock details for each member company.
+// It includes a list of stock details for the member company or intermediary.
 type StockCallbackObj struct {
-	MemberCompanyStock []StockDetails `json:"MemberCompanyStock"` // List of stock details for each member company
+	MemberCompanyStock []StockDetails `json:"MemberCompanyStock"` // List of stock details for the entity
+}
+
+// UnmarshalJSON makes StockCallbackObj tolerant to the two shapes DMVIC returns:
+// member-company stock under "MemberCompanyStock" and member-intermediary stock
+// under "MemberIntermediaryStock" (casing varies). Whichever key is present is
+// read into the stock slice, so both stock checks decode through this one type.
+func (s *StockCallbackObj) UnmarshalJSON(data []byte) error {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+	for k, v := range m {
+		if strings.EqualFold(k, "MemberCompanyStock") || strings.EqualFold(k, "MemberIntermediaryStock") {
+			var list []StockDetails
+			if err := json.Unmarshal(v, &list); err != nil {
+				return fmt.Errorf("failed to unmarshal stock list: %w", err)
+			}
+			s.MemberCompanyStock = list
+			return nil
+		}
+	}
+	// No recognized key: leave the slice nil (no stock lines returned).
+	return nil
 }
 
 // StockDetails contains information about the stock of a specific insurance certificate.
