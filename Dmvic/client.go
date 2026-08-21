@@ -58,6 +58,10 @@ type Client interface {
 	// intermediary.
 	GetMemberIntermediaryStock(memberIntermediaryID int) (*StockResponse, error)
 
+	// GetIntermediaryStock retrieves certificate stock for one or more
+	// intermediaries by their IRA numbers (DMVIC 4.8.2 IntermediaryStock).
+	GetIntermediaryStock(iraNumbers []string) (*StockResponse, error)
+
 	// GetToken returns the current authentication token.
 	GetToken() string
 
@@ -597,6 +601,23 @@ func (c *client) GetMemberIntermediaryStock(memberIntermediaryID int) (*StockRes
 	if !resp.Success && len(resp.Error) > 0 {
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
 		return &resp, newDMVICError("GetMemberIntermediaryStock", ErrIntermediaryStock, dmvicCode, resp.Error[0].ErrorText)
+	}
+	return &resp, nil
+}
+
+// GetIntermediaryStock retrieves certificate stock for the given intermediary
+// IRA numbers. DMVIC 4.8.2: POST /v6/Integration/IntermediaryStock with the IRA
+// numbers in the body (params are case-insensitive per the spec).
+func (c *client) GetIntermediaryStock(iraNumbers []string) (*StockResponse, error) {
+	var resp StockResponse
+	reqBody := map[string]interface{}{"IntermediaryIRANumbers": iraNumbers}
+	err := c.makeAPICall(http.MethodPost, "/v6/Integration/IntermediaryStock", reqBody, &resp, ErrIntermediaryStock)
+	if err != nil {
+		return nil, err
+	}
+	if !resp.Success && len(resp.Error) > 0 {
+		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
+		return &resp, newDMVICError("GetIntermediaryStock", ErrIntermediaryStock, dmvicCode, resp.Error[0].ErrorText)
 	}
 	return &resp, nil
 }
