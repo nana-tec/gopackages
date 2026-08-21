@@ -606,12 +606,13 @@ func (c *client) GetMemberIntermediaryStock(memberIntermediaryID int) (*StockRes
 }
 
 // GetIntermediaryStock retrieves certificate stock for the given intermediary
-// IRA numbers. DMVIC 4.8.2: POST /v6/Integration/IntermediaryStock with the IRA
-// numbers in the body (params are case-insensitive per the spec).
+// IRA numbers. DMVIC 4.8.2: POST /v4/Integration/IntermediaryStock with the IRA
+// numbers in the body (params are case-insensitive per the spec). This endpoint
+// is at v4 (unlike MemberCompanyStock at v6) — v6 returns "invalid API".
 func (c *client) GetIntermediaryStock(iraNumbers []string) (*StockResponse, error) {
 	var resp StockResponse
 	reqBody := map[string]interface{}{"IntermediaryIRANumbers": iraNumbers}
-	err := c.makeAPICall(http.MethodPost, "/v6/Integration/IntermediaryStock", reqBody, &resp, ErrIntermediaryStock)
+	err := c.makeAPICall(http.MethodPost, "/v4/Integration/IntermediaryStock", reqBody, &resp, ErrIntermediaryStock)
 	if err != nil {
 		return nil, err
 	}
