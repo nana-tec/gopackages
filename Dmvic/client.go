@@ -572,8 +572,10 @@ func (c *client) IssueTypeDCertificate(req *TypeDIssuanceRequest) (*InsuranceRes
 
 func (c *client) GetMemberCompanyStock(memberCompanyID int) (*StockResponse, error) {
 	var resp StockResponse
-	endpoint := fmt.Sprintf("/V6/Integration/MemberCompanyStock?MemberCompanyId=%d", memberCompanyID)
-	err := c.makeAPICall(http.MethodGet, endpoint, nil, &resp, ErrMemberCompanyStock)
+	// DMVIC 4.8.1: POST /v6/Integration/MemberCompanyStock with the member
+	// company id in the body (params are case-insensitive per the spec).
+	reqBody := map[string]interface{}{"MemberCompanyId": memberCompanyID}
+	err := c.makeAPICall(http.MethodPost, "/v6/Integration/MemberCompanyStock", reqBody, &resp, ErrMemberCompanyStock)
 	if err != nil {
 		return nil, err
 	}
