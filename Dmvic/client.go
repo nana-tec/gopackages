@@ -572,7 +572,7 @@ func (c *client) IssueTypeDCertificate(req *TypeDIssuanceRequest) (*InsuranceRes
 
 func (c *client) GetMemberCompanyStock(memberCompanyID int) (*StockResponse, error) {
 	var resp StockResponse
-	endpoint := fmt.Sprintf("/V4/IntermediaryIntegration/MemberCompanyStock?MemberCompanyId=%d", memberCompanyID)
+	endpoint := fmt.Sprintf("/V6/Integration/MemberCompanyStock?MemberCompanyId=%d", memberCompanyID)
 	err := c.makeAPICall(http.MethodGet, endpoint, nil, &resp, ErrMemberCompanyStock)
 	if err != nil {
 		return nil, err
@@ -581,12 +581,13 @@ func (c *client) GetMemberCompanyStock(memberCompanyID int) (*StockResponse, err
 		dmvicCode := c.parseDMVICError(resp.Error[0].ErrorCode)
 		return &resp, newDMVICError("GetMemberCompanyStock", ErrMemberCompanyStock, dmvicCode, resp.Error[0].ErrorText)
 	}
+
 	return &resp, nil
 }
 
 func (c *client) GetMemberIntermediaryStock(memberIntermediaryID int) (*StockResponse, error) {
 	var resp StockResponse
-	endpoint := fmt.Sprintf("/V4/IntermediaryIntegration/MemberIntermediaryStock?MemberIntermediaryId=%d", memberIntermediaryID)
+	endpoint := fmt.Sprintf("/V6/Integration/IntermediaryStock?MemberIntermediaryId=%d", memberIntermediaryID)
 	err := c.makeAPICall(http.MethodGet, endpoint, nil, &resp, ErrIntermediaryStock)
 	if err != nil {
 		return nil, err
